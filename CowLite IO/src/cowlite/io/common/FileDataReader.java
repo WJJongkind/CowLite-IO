@@ -18,7 +18,7 @@
  */
 package cowlite.io.common;
 
-import util.Match;
+import cowlite.io.util.Match;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;

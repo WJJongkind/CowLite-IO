@@ -1,4 +1,4 @@
-package util;
+package cowlite.io.util;
 
 
 import java.util.ArrayList;
