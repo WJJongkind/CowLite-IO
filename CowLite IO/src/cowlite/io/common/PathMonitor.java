@@ -111,7 +111,7 @@ import java.util.Set;
  * @author Wessel Jelle Jongkind
  * @version 2018-03-13 (yyyy/mm/dd)
  */
-public class DirectoryMonitor 
+public class PathMonitor 
 {
     /**
      * Obtain one single FileSystemProvider for all {@code DirectoryMonitor}s. This should
@@ -154,7 +154,7 @@ public class DirectoryMonitor
      * All subdirectories of the directory that is referenced by the {@code DirectoryMonitor} represented
      * as a {@code Map}. 
      */
-    private final HashMap<Path, DirectoryMonitor> children;
+    private final HashMap<Path, PathMonitor> children;
     
     /**
      * The {@code Path} object that denotes the directory or file that is being monitored
@@ -170,7 +170,7 @@ public class DirectoryMonitor
      * @throws IOException When the directory denoted by the {@code Path} does not exist or IO errors occur.
      * @throws IllegalArgumentException When the {@code Path} that is given as a parameter is null.
      */
-    public DirectoryMonitor(Path p) throws IOException, IllegalArgumentException {
+    public PathMonitor(Path p) throws IOException, IllegalArgumentException {
         if(p == null) {
             throw new IllegalArgumentException("Path can not be null.");
         }
@@ -211,7 +211,7 @@ public class DirectoryMonitor
      * @throws IOException When the {@code DirectoryMonitor} could not be updated.
      * @see #checkChildren(List, List, List) 
      */
-    public void update(List<DirectoryMonitor> deleted, List<DirectoryMonitor> added, List<DirectoryMonitor> updated) throws IOException  {
+    public void update(List<PathMonitor> deleted, List<PathMonitor> added, List<PathMonitor> updated) throws IOException  {
         /*
             The file represented by this snapshot doesn't exist. This means
             that it has most likely been removed. Add it and it's children to the
@@ -292,9 +292,9 @@ public class DirectoryMonitor
      * @throws IOException When the {@code DirectoryMonitor} could not be updated.
      * @see #update(List, List, List) 
      */
-    private void checkChildren(List<DirectoryMonitor> deleted, List<DirectoryMonitor> added, List<DirectoryMonitor> updated) throws IOException {
+    private void checkChildren(List<PathMonitor> deleted, List<PathMonitor> added, List<PathMonitor> updated) throws IOException {
         // This list is used  to keep track of the subdirectories that were deleted
-        List<DirectoryMonitor> deletedChildren = new ArrayList<>(children.values());
+        List<PathMonitor> deletedChildren = new ArrayList<>(children.values());
         
         DirectoryStream<Path> stream = null;
         
@@ -302,14 +302,14 @@ public class DirectoryMonitor
             stream = Files.newDirectoryStream(file);
             for(Path p : stream) {
                 Path fileName = p.getFileName();
-                DirectoryMonitor snapshot = children.get(fileName);
+                PathMonitor snapshot = children.get(fileName);
                 
                 // If the snapshot exists, update it. If it does not, create a new one.
                 if(snapshot != null) {
                     snapshot.update(deleted, added, updated);
                     deletedChildren.remove(snapshot);
                 } else {
-                    DirectoryMonitor newSnapshot = new DirectoryMonitor(p);
+                    PathMonitor newSnapshot = new PathMonitor(p);
                     children.put(newSnapshot.getName(), newSnapshot);
                     newSnapshot.update(deleted, added, updated);
                     
@@ -341,8 +341,8 @@ public class DirectoryMonitor
      * @see #children
      * @see #checkChildren(List, List, List) 
      */
-    private void removeChildren(List<DirectoryMonitor> remove) {
-        for(DirectoryMonitor snapshot : remove) {
+    private void removeChildren(List<PathMonitor> remove) {
+        for(PathMonitor snapshot : remove) {
             children.remove(snapshot.getName());
         }
     }
@@ -357,7 +357,7 @@ public class DirectoryMonitor
      * @param garbage A list in which the DirectoryMonitors are stored that are present 
      *                in this DirectoryMonitor's subdirectories, but not present in the given DirectoryMonitor's subdirectories.
      */
-    public void compareTo(DirectoryMonitor other, List<DirectoryMonitor> missing, List<DirectoryMonitor> garbage) {
+    public void compareTo(PathMonitor other, List<PathMonitor> missing, List<PathMonitor> garbage) {
         // No need to run the method if there are no children to this DirectoryMonitor
         if(children.isEmpty()) {
             return;
@@ -367,12 +367,12 @@ public class DirectoryMonitor
         Set<Path> childrenNames = children.keySet();
         
         // Make a soft-copy so we can keep track of which DirectoryMonitors are missing
-        HashMap<Path, DirectoryMonitor> otherChildren = new HashMap<>(other.getChildren());
+        HashMap<Path, PathMonitor> otherChildren = new HashMap<>(other.getChildren());
         
         for(Path p : childrenNames) {
-            DirectoryMonitor child = otherChildren.get(p);
+            PathMonitor child = otherChildren.get(p);
             if(child != null) {
-                DirectoryMonitor myChild = children.get(p);
+                PathMonitor myChild = children.get(p);
                 
                 // DirectoryMonitors are not the same, add to missing list.
                 if(myChild.isDirectory() != child.isDirectory() || myChild.getSize() != child.getSize()) {
@@ -414,7 +414,7 @@ public class DirectoryMonitor
             
             out.println(file + "||" + modifiedTime.toMillis() + "||" + size);
             
-            for(DirectoryMonitor child : children.values()) {
+            for(PathMonitor child : children.values()) {
                 child.store(out);
             }
         } catch(FileNotFoundException e) {
@@ -435,7 +435,7 @@ public class DirectoryMonitor
     private void store(PrintWriter out) {
         out.println(file + "||" + modifiedTime.toMillis() + "||" + size);
         
-        for(DirectoryMonitor child : children.values()) {
+        for(PathMonitor child : children.values()) {
             child.store(out);
         }
     }
@@ -448,7 +448,7 @@ public class DirectoryMonitor
      * @return A {@code DirectoryMonitor} which contains all subdirectories that were
      * found in the given file.
      */
-    public static DirectoryMonitor decompile(File f) {
+    public static PathMonitor decompile(File f) {
         throw new UnsupportedOperationException("Still has to be implemented...");
     }
 
@@ -518,7 +518,7 @@ public class DirectoryMonitor
      * @return The children of the {@code DirectoryMonitor}, which are subdirectories and
      * files contained by the directory that the {@code DirectoryMonitor} represents.
      */
-    public HashMap<Path, DirectoryMonitor> getChildren() {
+    public HashMap<Path, PathMonitor> getChildren() {
         return children;
     }
 }
